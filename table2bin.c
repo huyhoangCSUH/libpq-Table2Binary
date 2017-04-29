@@ -22,18 +22,25 @@ int main(int argc, char **argv) {
                 j;
     char *tableName;
 
-    /*
-     
+    /*     
      Need to pass tableName as an argument, databasename is an optional argument
-      
-     */
-    if (argc > 2)
-        conninfo = argv[2];
-
-    else
-        tableName = argv[1];
-        conninfo = "dbname = postgres";
-
+    */  
+    
+    switch(argc) {
+        case 2:
+            conninfo = "dbname = postgres";
+            tableName = argv[1];
+            break;
+        case 3:
+            conninfo = argv[2];
+            tableName = argv[1];
+            break;
+        default:
+            printf("Default db: postgres, default table: dataset\n");
+            conninfo = "dbname = postgres";
+            tableName = "dataset";
+            break;
+    }
     /* Make a connection to the database */
     conn = PQconnectdb(conninfo);
 
@@ -44,13 +51,6 @@ int main(int argc, char **argv) {
         exit_nicely(conn);
     }
 
-    /*
-     * Our test case here involves using a cursor, for which we must be inside
-     * a transaction block.  We could do the whole thing with a single
-     * PQexec() of "select * from pg_database", but that's too trivial to make
-     * a good example.
-     */
-
     /* Start a transaction block */
     res = PQexec(conn, "BEGIN");
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
@@ -58,41 +58,19 @@ int main(int argc, char **argv) {
         PQclear(res);
         exit_nicely(conn);
     }
-
-    /*
-     * Should PQclear PGresult whenever it is no longer needed to avoid memory
-     * leaks
-     */
     PQclear(res);
-    
-    // srand(time(NULL));
-    // int num = rand();
-    // char numStr[10];
-    // sprintf(numStr, "%d", num);
-    // char querryStr[] = "INSERT INTO dataset VALUES(";
-    // strcat(querryStr, numStr);
-    // strcat(querryStr, ")");
-    // res = PQexec(conn, querryStr1);
-    // if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-    //     fprintf(stderr, "INSERT FAIL: %s", PQerrorMessage(conn));
-    //     PQclear(res);
-    //     exit_nicely(conn);
-    // }
-    // PQclear(res);
-
-    /*
-     * Fetch rows from pg_database, the system catalog of databases
-     */
-    char querryStr[] = "DECLARE test CURSOR FOR SELECT * FROM ";
+        
+    //Fetching rows 
+    char querryStr[100];    
+    strcat(querryStr, "DECLARE test CURSOR FOR SELECT * FROM ");
     strcat(querryStr, tableName);
-    strcat(querryStr, " LIMIT(20)");
+    // strcat(querryStr, " LIMIT(20)");
     res = PQexec(conn, querryStr);
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
         fprintf(stderr, "DECLARE CURSOR FAIL: %s", PQerrorMessage(conn));
         PQclear(res);
         exit_nicely(conn);
     }
-
     PQclear(res);
 
     res = PQexec(conn, "FETCH ALL in test");
@@ -104,23 +82,49 @@ int main(int argc, char **argv) {
 
     /* first, print out the attribute names */
     nFields = PQnfields(res);
-    for (i = 0; i < nFields; i++)
-        printf("%-15s", PQfname(res, i));
-    for (i = 0; i < nFields; i++)
-        printf("%-15s", PQfsize(res, i));
-    printf("\n\n");
+    // for (i = 0; i < nFields; i++)
+        // printf("%-15s", PQfname(res, i));
+    // printf("\n");
 
+    // Then the size in bytes of each column
+    // printf("Num of columns: %d\n", nFields);
+    // printf("Size of nFields: %lu\n", sizeof(nFields));
+    int *sizeArr = (int*)malloc(nFields*sizeof(int));
+    int currentSize;
+    for (i = 0; i < nFields; i++) {
+        // printf("%-15d", PQfsize(res, i));
+        currentSize = PQfsize(res, i);
+        sizeArr[i] = currentSize;        
+    }
+   
     /* next, print out the rows */
-    for (i = 0; i < PQntuples(res); i++)
-    {
+    unsigned long numRows = PQntuples(res);    
+
+    FILE *fout = fopen("/tmp/out.bin", "a");
+    
+    // This part write to the header in following order:
+    // number of rows, number of columns, length of each column (the loop)
+    fwrite(&numRows, sizeof(numRows), 1, fout);
+    fwrite(&nFields, sizeof(nFields), 1, fout);
+    int currentColumnSize;
+    for (i = 0; i < nFields; i++) {
+        currentColumnSize = PQfsize(res, i);
+        fwrite(&currentColumnSize, sizeof(currentColumnSize), 1, fout);
+    }
+    
+    // Then write the values
+    char *currentValue;
+    for (i = 0; i < 10; i++) {
         for (j = 0; j < nFields; j++)
+            // printf("%-15s", PQgetvalue(res, i, j));
+            // currentValue = PQgetvalue(res, i, j);
             printf("%-15s", PQgetvalue(res, i, j));
+            fwrite(PQgetvalue(res, i, j), sizeArr[j], 1, fout);
         printf("\n");
     }
-
     PQclear(res);
 
-     close the portal ... 
+    //close the portal ... 
     res = PQexec(conn, "CLOSE myportal");
     PQclear(res);
 
