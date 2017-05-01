@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
         
     //Fetching rows 
     char querryStr[100];    
-    strcat(querryStr, "DECLARE test CURSOR FOR SELECT * FROM ");
+    strcat(querryStr, "DECLARE test BINARY CURSOR FOR SELECT * FROM ");
     strcat(querryStr, tableName);
     // strcat(querryStr, " LIMIT(20)");
     res = PQexec(conn, querryStr);
@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     }
     PQclear(res);
 
-    res = PQexec(conn, "FETCH ALL in test");
+    res = PQexec(conn, "FETCH 10 in test");
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         fprintf(stderr, "FETCH ALL failed: %s", PQerrorMessage(conn));
         PQclear(res);
@@ -113,13 +113,13 @@ int main(int argc, char **argv) {
     }
     
     // Then write the values
-    char *currentValue;
-    for (i = 0; i < 10; i++) {
-        for (j = 0; j < nFields; j++)
+    for (i = 0; i < numRows; i++) {
+        for (j = 0; j < nFields; j++) {
             // printf("%-15s", PQgetvalue(res, i, j));
             // currentValue = PQgetvalue(res, i, j);
             printf("%-15s", PQgetvalue(res, i, j));
             fwrite(PQgetvalue(res, i, j), sizeArr[j], 1, fout);
+        }
         printf("\n");
     }
     PQclear(res);
