@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
     PGconn     *conn;
     PGresult   *res;
     int         nFields;
-    int         i,
+    int         i, 
                 j;
     char *tableName;
 
@@ -51,6 +51,8 @@ int main(int argc, char **argv) {
         exit_nicely(conn);
     }
 
+    clock_t start = clock();
+
     /* Start a transaction block */
     res = PQexec(conn, "BEGIN");
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
@@ -73,7 +75,7 @@ int main(int argc, char **argv) {
     }
     PQclear(res);
 
-    res = PQexec(conn, "FETCH 10 in test");
+    res = PQexec(conn, "FETCH ALL in test");
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         fprintf(stderr, "FETCH ALL failed: %s", PQerrorMessage(conn));
         PQclear(res);
@@ -96,32 +98,34 @@ int main(int argc, char **argv) {
         currentSize = PQfsize(res, i);
         sizeArr[i] = currentSize;        
     }
-   
-    /* next, print out the rows */
+    
     unsigned long numRows = PQntuples(res);    
-
+    // printf("%lu\n", numRows);
     FILE *fout = fopen("/tmp/out.bin", "a");
     
+    // Printing HEADER
     // This part write to the header in following order:
     // number of rows, number of columns, length of each column (the loop)
-    fwrite(&numRows, sizeof(numRows), 1, fout);
-    fwrite(&nFields, sizeof(nFields), 1, fout);
-    int currentColumnSize;
-    for (i = 0; i < nFields; i++) {
-        currentColumnSize = PQfsize(res, i);
-        fwrite(&currentColumnSize, sizeof(currentColumnSize), 1, fout);
-    }
+    // fwrite(&numRows, sizeof(numRows), 1, fout);
+    // fwrite(&nFields, sizeof(nFields), 1, fout);
+    // int currentColumnSize;
+    // for (i = 0; i < nFields; i++) {
+    //     currentColumnSize = PQfsize(res, i);
+    //     fwrite(&currentColumnSize, sizeof(currentColumnSize), 1, fout);
+    // }
     
     // Then write the values
     for (i = 0; i < numRows; i++) {
         for (j = 0; j < nFields; j++) {
             // printf("%-15s", PQgetvalue(res, i, j));
             // currentValue = PQgetvalue(res, i, j);
-            printf("%-15s", PQgetvalue(res, i, j));
+            // printf("%-15s", PQgetvalue(res, i, j));
             fwrite(PQgetvalue(res, i, j), sizeArr[j], 1, fout);
         }
-        printf("\n");
+        // printf("\n");
     }
+
+
     PQclear(res);
 
     //close the portal ... 
@@ -131,6 +135,13 @@ int main(int argc, char **argv) {
     /* end the transaction */
     res = PQexec(conn, "END");
     PQclear(res);
+
+    clock_t end = clock();
+
+    unsigned long timediff = end - start;
+    unsigned long timeOfExe = timediff * 1000 / CLOCKS_PER_SEC;
+
+    printf("Time of exe: %f seconds\n", timeOfExe/1000.0);
 
     /* close the connection to the database and cleanup */
     PQfinish(conn);
