@@ -1,5 +1,4 @@
-/*
- * 
+/* 
  *      Export a table to a binary file 
  */
 #include <stdio.h>
@@ -37,7 +36,7 @@ int main(int argc, char **argv) {
             break;
         default:
             printf("Default db: postgres, default table: dataset\n");
-            conninfo = "dbname = postgres";
+            conninfo = "dbname = huy";
             tableName = "dataset";
             break;
     }
@@ -51,8 +50,8 @@ int main(int argc, char **argv) {
         exit_nicely(conn);
     }
 
-    clock_t start = clock();
-
+    // clock_t start = clock();
+    
     /* Start a transaction block */
     res = PQexec(conn, "BEGIN");
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
@@ -61,7 +60,7 @@ int main(int argc, char **argv) {
         exit_nicely(conn);
     }
     PQclear(res);
-        
+    time_t start = time(NULL);  
     //Fetching rows 
     char querryStr[100];    
     strcat(querryStr, "DECLARE test BINARY CURSOR FOR SELECT * FROM ");
@@ -81,7 +80,9 @@ int main(int argc, char **argv) {
         PQclear(res);
         exit_nicely(conn);
     }
-
+    time_t end = time(NULL);
+    int timeOfExe = end - start;
+    printf("Time of fetching data to memory: %i seconds\n", timeOfExe);
     /* first, print out the attribute names */
     nFields = PQnfields(res);
     // for (i = 0; i < nFields; i++)
@@ -91,6 +92,7 @@ int main(int argc, char **argv) {
     // Then the size in bytes of each column
     // printf("Num of columns: %d\n", nFields);
     // printf("Size of nFields: %lu\n", sizeof(nFields));
+    
     int *sizeArr = (int*)malloc(nFields*sizeof(int));
     int currentSize;
     for (i = 0; i < nFields; i++) {
@@ -101,7 +103,7 @@ int main(int argc, char **argv) {
     
     unsigned long numRows = PQntuples(res);    
     // printf("%lu\n", numRows);
-    FILE *fout = fopen("/tmp/out.bin", "a");
+    FILE *fout = fopen("out.bin", "w+");
     
     // Printing HEADER
     // This part write to the header in following order:
@@ -113,7 +115,7 @@ int main(int argc, char **argv) {
     //     currentColumnSize = PQfsize(res, i);
     //     fwrite(&currentColumnSize, sizeof(currentColumnSize), 1, fout);
     // }
-    
+    start = time(NULL); // Timing for exprting binary file
     // Then write the values
     for (i = 0; i < numRows; i++) {
         for (j = 0; j < nFields; j++) {
@@ -124,7 +126,7 @@ int main(int argc, char **argv) {
         }
         // printf("\n");
     }
-
+    end = time(NULL);
 
     PQclear(res);
 
@@ -136,13 +138,13 @@ int main(int argc, char **argv) {
     res = PQexec(conn, "END");
     PQclear(res);
 
-    clock_t end = clock();
-
-    unsigned long timediff = end - start;
-    unsigned long timeOfExe = timediff * 1000 / CLOCKS_PER_SEC;
-
-    printf("Time of exe: %f seconds\n", timeOfExe/1000.0);
-
+    // clock_t end = clock();
+    
+    // int timediff = end - start;
+    // int timeOfExe = timediff * 1000 / CLOCKS_PER_SEC;
+    timeOfExe = end - start;
+    // printf("Time of exe: %f seconds\n", timeOfExe/1000.0);
+    printf("Time of export to file: %i seconds\n", timeOfExe);
     /* close the connection to the database and cleanup */
     PQfinish(conn);
 
