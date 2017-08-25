@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
     char querryStr[100];    
     strcat(querryStr, "DECLARE test BINARY CURSOR FOR SELECT * FROM ");
     strcat(querryStr, tableName);
-    strcat(querryStr, " LIMIT(10)");
+    strcat(querryStr, " LIMIT(20)");
     res = PQexec(conn, querryStr);
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
         fprintf(stderr, "DECLARE CURSOR FAIL: %s", PQerrorMessage(conn));
@@ -111,9 +111,9 @@ int main(int argc, char **argv) {
     This part writes to the header in following order:
     Number of rows, number of columns, length of each column (the loop)
     types:
-    int         4 bytes
-    bigint      8 bytes
-    double prec 8 bytes
+    int         4 bytes     
+    bigint      8 bytes     1
+    double prec 8 bytes     2
 
     */
     fwrite(&nFields, sizeof(nFields), 1, fout);
@@ -124,16 +124,20 @@ int main(int argc, char **argv) {
     //     currentColumnSize = PQfsize(res, i);
     //     fwrite(&currentColumnSize, sizeof(currentColumnSize), 1, fout);
     // }
-    start = time(NULL); // Timing for exprting binary file
+    // Print out type instead of size in bytes
+    int currentColumnType = 1;
+    fwrite(&currentColumnType, 4, 1, fout);
+    for (i = 1; i < nFields; i++) {
+        currentColumnType = 2;
+        fwrite(&currentColumnType, 4, 1, fout);
+    }
+    
+    start = time(NULL); // Timing for exporting binary file
     // Then write the values
     for (i = 0; i < numRows; i++) {
         for (j = 0; j < nFields; j++) {
-            // printf("%-15s", PQgetvalue(res, i, j));
-            // currentValue = PQgetvalue(res, i, j);
-            // printf("%-15s", PQgetvalue(res, i, j));
             fwrite(PQgetvalue(res, i, j), sizeArr[j], 1, fout);
         }
-        // printf("\n");
     }
     end = time(NULL);
 
