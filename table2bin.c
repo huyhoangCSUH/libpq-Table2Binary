@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     const char *conninfo;
     PGconn     *conn;
     PGresult   *res;
-    int         nFields;
+    
     int         i, 
                 j;
     char *tableName;
@@ -83,8 +83,9 @@ int main(int argc, char **argv) {
     time_t end = time(NULL);
     int timeOfExe = end - start;
     printf("Time of fetching data to memory: %i seconds\n", timeOfExe);
+    
     /* first, print out the attribute names */
-    nFields = PQnfields(res);
+    int nFields = PQnfields(res);
     // for (i = 0; i < nFields; i++)
         // printf("%-15s", PQfname(res, i));
     // printf("\n");
@@ -105,11 +106,19 @@ int main(int argc, char **argv) {
     // printf("%lu\n", numRows);
     FILE *fout = fopen("out.bin", "w+");
     
-    // Printing HEADER
-    // This part write to the header in following order:
-    // number of rows, number of columns, length of each column (the loop)
-    // fwrite(&numRows, sizeof(numRows), 1, fout);
-    // fwrite(&nFields, sizeof(nFields), 1, fout);
+    /*
+    Printing HEADER
+    This part writes to the header in following order:
+    Number of rows, number of columns, length of each column (the loop)
+    types:
+    int         4 bytes
+    bigint      8 bytes
+    double prec 8 bytes
+
+    */
+
+    fwrite(&numRows, sizeof(numRows), 1, fout);
+    fwrite(&nFields, sizeof(nFields), 1, fout);
     // int currentColumnSize;
     // for (i = 0; i < nFields; i++) {
     //     currentColumnSize = PQfsize(res, i);
