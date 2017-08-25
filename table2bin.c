@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
     char querryStr[100];    
     strcat(querryStr, "DECLARE test BINARY CURSOR FOR SELECT * FROM ");
     strcat(querryStr, tableName);
-    // strcat(querryStr, " LIMIT(20)");
+    strcat(querryStr, " LIMIT(10)");
     res = PQexec(conn, querryStr);
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
         fprintf(stderr, "DECLARE CURSOR FAIL: %s", PQerrorMessage(conn));
