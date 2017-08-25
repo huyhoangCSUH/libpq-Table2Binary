@@ -116,9 +116,9 @@ int main(int argc, char **argv) {
     double prec 8 bytes
 
     */
-
-    fwrite(&numRows, sizeof(numRows), 1, fout);
     fwrite(&nFields, sizeof(nFields), 1, fout);
+    fwrite(&numRows, sizeof(numRows), 1, fout);
+    
     // int currentColumnSize;
     // for (i = 0; i < nFields; i++) {
     //     currentColumnSize = PQfsize(res, i);
