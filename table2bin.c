@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
     
     unsigned long numRows = PQntuples(res);    
     // printf("%lu\n", numRows);
-    FILE *fout = fopen("out.bin", "w+");
+    FILE *fout = fopen("/tmp/out.bin", "w+");
     
     /*
     Printing HEADER
