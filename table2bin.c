@@ -94,13 +94,13 @@ int main(int argc, char **argv) {
     // printf("Num of columns: %d\n", nFields);
     // printf("Size of nFields: %lu\n", sizeof(nFields));
     
-    int *sizeArr = (int*)malloc(nFields*sizeof(int));
+    // int *sizeArr = (int*)malloc(nFields*sizeof(int));
     int currentSize;
-    for (i = 0; i < nFields; i++) {
-        // printf("%-15d", PQfsize(res, i));
-        currentSize = PQfsize(res, i);
-        sizeArr[i] = currentSize;        
-    }
+    // for (i = 0; i < nFields; i++) {
+    //     // printf("%-15d", PQfsize(res, i));
+    //     currentSize = PQfsize(res, i);
+    //     sizeArr[i] = currentSize;        
+    // }
     
     unsigned long numRows = PQntuples(res);    
     // printf("%lu\n", numRows);
@@ -116,8 +116,9 @@ int main(int argc, char **argv) {
     double prec 8 bytes     2
 
     */
-    fwrite(&nFields, sizeof(nFields), 1, fout);
-    fwrite(&numRows, sizeof(numRows), 1, fout);
+    fwrite(&numRows, 8, 1, fout);
+    fwrite(&nFields, 4, 1, fout);
+    
     
     // int currentColumnSize;
     // for (i = 0; i < nFields; i++) {
@@ -128,7 +129,7 @@ int main(int argc, char **argv) {
     int currentColumnType = 1;
     fwrite(&currentColumnType, 4, 1, fout);
     for (i = 1; i < nFields; i++) {
-        currentColumnType = 2;
+        currentColumnType = 1;
         fwrite(&currentColumnType, 4, 1, fout);
     }
     
@@ -136,7 +137,7 @@ int main(int argc, char **argv) {
     // Then write the values
     for (i = 0; i < numRows; i++) {
         for (j = 0; j < nFields; j++) {
-            fwrite(PQgetvalue(res, i, j), sizeArr[j], 1, fout);
+            fwrite(PQgetvalue(res, i, j), 8, 1, fout);
         }
     }
     end = time(NULL);
