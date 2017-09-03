@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
     //     sizeArr[i] = currentSize;        
     // }
     
-    unsigned long numRows = PQntuples(res);    
+    long long numRows = PQntuples(res);    
     // printf("%lu\n", numRows);
     FILE *fout = fopen("/tmp/out.bin", "w+");
     
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     //     fwrite(&currentColumnSize, sizeof(currentColumnSize), 1, fout);
     // }
     // Print out type instead of size in bytes
-    int currentColumnType = 1;
+    int currentColumnType = 2;
     fwrite(&currentColumnType, 4, 1, fout);
     for (i = 1; i < nFields; i++) {
         currentColumnType = 1;
